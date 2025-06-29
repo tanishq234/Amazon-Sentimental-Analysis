@@ -12,7 +12,6 @@ import pandas as pd
 import pickle
 import base64
 
-# Ensure NLTK data is downloaded
 import nltk
 nltk.download('stopwords')
 
@@ -21,7 +20,6 @@ STOPWORDS = set(stopwords.words("english"))
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
-# Load models only once at startup
 try:
     import xgboost as xgb
     predictor = xgb.XGBClassifier()
@@ -46,11 +44,9 @@ def test():
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        # Ensure model is loaded
         if not all([predictor, scaler, cv]):
             raise RuntimeError("Model files not loaded.")
 
-        # CSV Upload
         if "file" in request.files:
             file = request.files["file"]
             data = pd.read_csv(file)
@@ -67,12 +63,10 @@ def predict():
                 download_name="Predictions.csv"
             )
 
-            # Send base64 graph in headers
             response.headers["X-Graph-Exists"] = "true"
             response.headers["X-Graph-Data"] = base64.b64encode(graph.getbuffer()).decode("utf-8")
             return response
 
-        # Single text input
         elif request.is_json and "text" in request.json:
             text_input = request.json["text"]
             sentiment = single_prediction(text_input)
@@ -114,7 +108,6 @@ def bulk_prediction(data):
     preds = predictor.predict_proba(X_scaled).argmax(axis=1)
     data["Predicted sentiment"] = ["Positive" if p == 1 else "Negative" for p in preds]
 
-    # Save predictions to CSV
     csv_output = BytesIO()
     data.to_csv(csv_output, index=False)
     csv_output.seek(0)
